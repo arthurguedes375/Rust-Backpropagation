@@ -64,7 +64,7 @@ pub fn forward_propagation(mut x: DMatrix<Unit>, theta: &Weights, add_bias: bool
 
 pub fn cost_function(x: DMatrix<Unit>, theta: Weights, y: Y, lambda: f32, add_bias: bool) -> (f32, Weights) {
     let y = y.val();
-    let m = x.row_iter().len();
+    let m = x.row_iter().len() as f32;
     let mut grad = vec![];
 
     let (z, layers) = forward_propagation(x, &theta, add_bias);
@@ -82,19 +82,20 @@ pub fn cost_function(x: DMatrix<Unit>, theta: Weights, y: Y, lambda: f32, add_bi
     
     let reg =
             (
-                lambda / (2.0 * m as f32)
+                lambda / (2.0 * m)
             ) * theta
             .iter()
             .map(|g| g.columns_range(1..).map(|x| x.powf(2.0)).sum())
             .sum::<f32>();
 
-    let j = first_part / m as f32 + reg;
+    let j = first_part / m + reg;
 
     let last_partial = &layers[layers.len() - 1] - y;
 
     let mut ddelta: Weights = theta[..theta.len()].iter().map(|l| l.map(|_| 0.0)).collect();
     let z2s = sigmoid_gradient( &z[0] );
-    for i in 0..m {
+    let range_m = m as usize;
+    for i in 0..range_m {
         let d3 = last_partial.row(i).transpose();
         
         let delta2 = (theta[1].transpose() * &d3)
@@ -105,21 +106,15 @@ pub fn cost_function(x: DMatrix<Unit>, theta: Weights, y: Y, lambda: f32, add_bi
         ddelta[1] += d3 * layers[1].row(i);
         ddelta[0] += delta2.rows_range(1..) * layers[0].row(i);
     }
-    let first_term = lambda / m as f32; 
-    
-    grad.push(&ddelta[0] / m as f32);
 
-    
-    for (c, mut v) in grad[0].column_iter_mut().enumerate() {
-        if c != 0 {
-            v += first_term * theta[0].column(c);
-        }
-    }
+    let first_term = lambda / m;
 
-    grad.push(&ddelta[1] / m as f32);
-    for (c, mut v) in grad[1].column_iter_mut().enumerate() {
-        if c != 0 {
-            v += first_term * theta[1].column(c);
+    for (i, d) in ddelta.iter().enumerate() {
+        grad.push(d / m);
+        for (c, mut v) in grad[i].column_iter_mut().enumerate() {
+            if c != 0 {
+                v += first_term * theta[i].column(c);
+            }
         }
     }
 
