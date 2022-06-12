@@ -93,18 +93,33 @@ pub fn cost_function(x: DMatrix<Unit>, theta: Weights, y: Y, lambda: f32, add_bi
     let last_partial = &layers[layers.len() - 1] - y;
 
     let mut ddelta: Weights = theta[..theta.len()].iter().map(|l| l.map(|_| 0.0)).collect();
-    let z2s = sigmoid_gradient( &z[0] );
     let range_m = m as usize;
+
     for i in 0..range_m {
         let d3 = last_partial.row(i).transpose();
         
-        let delta2 = (theta[1].transpose() * &d3)
-            .component_mul(
-                &z2s.row(i).insert_column(0, 1.0).transpose()
-            );
-        
-        ddelta[1] += d3 * layers[1].row(i);
-        ddelta[0] += delta2.rows_range(1..) * layers[0].row(i);
+        let mut partials = vec![d3];
+
+        for lx in 1..layers.len() {
+            let l = layers.len() - lx - 1;
+
+            if l > 0 {
+                let zr: DMatrix<f32> = z[l - 1].rows(i, 1).transpose();
+                
+                let sig = sigmoid_gradient( &zr ).insert_row(0, 1.0);
+
+                let next_partial = &partials[lx - 1];
+
+                let delta = (
+                    theta[l].transpose() * next_partial
+                ).component_mul(
+                        &sig
+                    );
+                partials.push(delta.clone().remove_row(0));
+            }
+
+            ddelta[l] += &partials[lx - 1] * layers[l].row(i);            
+        }
     }
 
     let first_term = lambda / m;
