@@ -1,5 +1,6 @@
 pub mod types;
 
+use std::sync::mpsc::{channel, Receiver};
 use std::io::{self, Write};
 use std::{fs, time};
 
@@ -20,6 +21,7 @@ pub struct Evaluation {
     pub gradient: Weights,
 }
 
+#[derive(Clone)]
 pub struct NeuralNetwork {
     pub theta: Weights,
 }
@@ -29,6 +31,14 @@ impl NeuralNetwork {
         NeuralNetwork {
             theta,
         }
+    }
+
+    pub fn set_ctrlc_handler() -> Receiver<()> {
+        let (tx, rx) = channel();
+        ctrlc::set_handler(move || tx.send(()).unwrap())
+            .expect("Error setting Ctrl-C handler");
+
+        return rx;
     }
 
     pub fn forward_propagation(&self, x: &X) -> PropagatedNetwork {
@@ -168,7 +178,7 @@ impl NeuralNetwork {
         };
     }
 
-    pub fn train(&mut self, x: &X, y: &Y, alpha: f32, lambda: f32, iters: usize, batch_size: usize, debug: bool, rx: std::sync::mpsc::Receiver<()>) {
+    pub fn train(&mut self, x: &X, y: &Y, alpha: f32, lambda: f32, iters: usize, batch_size: usize, debug: bool, rx: Receiver<()>) {
         println!("Training... ");
         for i in 0..iters {
             if let Ok(_) = rx.try_recv() {

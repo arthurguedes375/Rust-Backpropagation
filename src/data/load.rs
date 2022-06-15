@@ -7,7 +7,12 @@ pub struct Data {
     pub y: Y,
 }
 
-pub fn load_csv(path: &str) -> Data {
+pub struct Dataset {
+    pub train: Data,
+    pub test: Data,
+}
+
+pub fn load_csv(path: &str, train_percentage: Option<f32>) -> Dataset {
     init_task("Loading csv");
 
     let mut content = Reader::from_path(path).unwrap(); 
@@ -37,9 +42,25 @@ pub fn load_csv(path: &str) -> Data {
         }
     }
 
+    let train_percentage = train_percentage.or(Some(0.60)).unwrap();
+
+    let divisor = (m as f32 * train_percentage) as usize;
+
+    let x_train = x.slice_range(..divisor, ..).clone_owned();
+    let y_train = y.slice_range(..divisor, ..).clone_owned();
+
+    let x_test = x.slice_range(divisor.., ..).clone_owned();
+    let y_test = y.slice_range(divisor.., ..).clone_owned();
+
     end_task();
-    return Data {
-        x: X::NotBiased(x),
-        y: Y::Indexed(y),
+    return Dataset {
+        train: Data {
+            x: X::NotBiased(x_train),
+            y: Y::Indexed(y_train),
+        },
+        test: Data {
+            x: X::NotBiased(x_test),
+            y: Y::Indexed(y_test),
+        },
     };
 }
