@@ -180,6 +180,8 @@ impl NeuralNetwork {
 
     pub fn train(&mut self, x: &X, y: &Y, alpha: f32, lambda: f32, iters: usize, batch_size: usize, debug: bool, rx: Receiver<()>) {
         println!("Training... ");
+        let mut batches: Vec<[Arc<DMatrix<f32>>; 2]> = vec![];
+
         for i in 0..iters {
             if let Ok(_) = rx.try_recv() {
                 break;
@@ -187,12 +189,16 @@ impl NeuralNetwork {
             let v = i % (x.nrows() / batch_size);
             let v1 = v * batch_size;
             let v2 = v * batch_size + batch_size;
+            if batches.len() <= v {
+                let batch_x = x
+                    .slice_range((v1)..(v2), ..).clone_owned();
+                let batch_y = y
+                    .slice_range((v1)..(v2), ..).clone_owned();
 
-            let batch_x = x
-                .slice_range((v1)..(v2), ..).clone_owned();
-            let batch_y = y
-                .slice_range((v1)..(v2), ..).clone_owned();
-            let evaluation = self.cost_function(&Arc::new(batch_x), &Arc::new(batch_y), lambda);
+                batches.push([Arc::new(batch_x), Arc::new(batch_y)]);
+            }
+            
+            let evaluation = self.cost_function(&batches[v][0], &batches[v][1], lambda);
             for (i, grad) in evaluation.gradient.iter().enumerate() {
                 self.theta[i] -= grad * alpha;
             }
