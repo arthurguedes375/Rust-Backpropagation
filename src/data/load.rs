@@ -1,6 +1,5 @@
-use crate::{data::{X, Y, to_biased, to_matrix_y}, neural_network::types::Unit};
+use crate::{data::{X, Y, to_biased, to_matrix_y}};
 use csv::{Reader, StringRecord};
-use nalgebra::{VecStorage, Dynamic};
 use crate::task::{init_task, end_task};
 use std::sync::Arc;
 
