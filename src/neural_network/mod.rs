@@ -259,8 +259,8 @@ impl NeuralNetwork {
                     let mut ddelta_lock = ddelta.lock().unwrap();
                     (*ddelta_lock)[l] += &partials[lx - 1] * layers[l].row(i);
                     drop(ddelta_lock); // Unlocks ddelta
-                    thread::sleep(Duration::from_nanos(1));
                 }
+                thread::sleep(Duration::from_nanos(1));
             }
 
             from_worker.send(()).unwrap();
