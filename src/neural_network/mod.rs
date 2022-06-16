@@ -1,6 +1,6 @@
 pub mod types;
 
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::{mpsc::{channel, Receiver}, Arc};
 use std::io::{self, Write};
 use std::{fs, time};
 
@@ -9,12 +9,13 @@ use na::{DMatrix};
 use types::{Weights, Unit};
 use crate::data::{X, Y};
 
+
 use crate::sigmoid::{sigmoid, sigmoid_gradient};
 
 
 pub struct PropagatedNetwork {
-    pub z: Vec<DMatrix<Unit>>,
-    pub layers: Vec<DMatrix<Unit>>,
+    pub z: Vec<Arc<DMatrix<Unit>>>,
+    pub layers: Vec<Arc<DMatrix<Unit>>>,
 }
 pub struct Evaluation {
     pub cost: f32,
@@ -42,20 +43,19 @@ impl NeuralNetwork {
     }
 
     pub fn forward_propagation(&self, x: &X) -> PropagatedNetwork {
-        let x = x.val();
-        let mut layers = vec![x];
+        let mut layers = vec![x.clone()];
         let mut zs = vec![];
     
         for (i, weights) in self.theta.iter().enumerate() {
-            let z = &layers[i] * weights.transpose();
-            zs.push(z.clone());
+            let z = &*layers[i] * weights.transpose();
             let sig = sigmoid(&z);
+            zs.push(Arc::new(z));
             let new_layer = if i == self.theta.len() - 1 {
                 sig
             } else {
                 sig.insert_column(0, 1.0)
             };
-            layers.push(new_layer);
+            layers.push(Arc::new(new_layer));
         }
     
         return PropagatedNetwork {
@@ -67,7 +67,6 @@ impl NeuralNetwork {
     pub fn precision(&self, x: &X, y: &Y) -> f32 {
         init_task("Precision: Forward Prop");
         let results = self.forward_propagation(x);
-        let y = y.val();
         end_task();
 
         init_task("Precision: Calculating");
@@ -101,12 +100,13 @@ impl NeuralNetwork {
     }
 
     pub fn cost_function(&self, x: &X, y: &Y, lambda: f32) -> Evaluation {
-        let x = x.val();
-        let y = y.val();
         let m = x.row_iter().len() as f32;
         let mut grad = vec![];
     
-        let PropagatedNetwork {z, layers} = self.forward_propagation(&X::Biased(x));
+        let PropagatedNetwork {
+            z,
+            layers,
+        } = self.forward_propagation(&x);
     
         let log_a3 = layers[layers.len() - 1].map(|p| p.ln());
         let log_1_a3 = layers[layers.len() - 1].map(|p| (1.0 - p).ln());
@@ -129,7 +129,7 @@ impl NeuralNetwork {
     
         let j = first_part / m + reg;
     
-        let last_partial = &layers[layers.len() - 1] - y;
+        let last_partial = &*layers[layers.len() - 1] - &**y;
     
         let mut ddelta: Weights = self.theta[..self.theta.len()].iter().map(|l| l.map(|_| 0.0)).collect();
         let range_m = m as usize;
@@ -184,8 +184,6 @@ impl NeuralNetwork {
             if let Ok(_) = rx.try_recv() {
                 break;
             }
-            let x = x.val();
-            let y = y.val();
             let v = i % (x.nrows() / batch_size);
             let v1 = v * batch_size;
             let v2 = v * batch_size + batch_size;
@@ -194,7 +192,7 @@ impl NeuralNetwork {
                 .slice_range((v1)..(v2), ..).clone_owned();
             let batch_y = y
                 .slice_range((v1)..(v2), ..).clone_owned();
-            let evaluation = self.cost_function(&X::Biased(batch_x), &Y::Matrix(batch_y), lambda);
+            let evaluation = self.cost_function(&Arc::new(batch_x), &Arc::new(batch_y), lambda);
             for (i, grad) in evaluation.gradient.iter().enumerate() {
                 self.theta[i] -= grad * alpha;
             }

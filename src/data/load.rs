@@ -1,6 +1,8 @@
-use crate::data::{X, Y};
+use crate::{data::{X, Y, to_biased, to_matrix_y}, neural_network::types::Unit};
 use csv::{Reader, StringRecord};
+use nalgebra::{VecStorage, Dynamic};
 use crate::task::{init_task, end_task};
+use std::sync::Arc;
 
 pub struct Data {
     pub x: X,
@@ -55,12 +57,12 @@ pub fn load_csv(path: &str, train_percentage: Option<f32>) -> Dataset {
     end_task();
     return Dataset {
         train: Data {
-            x: X::NotBiased(x_train),
-            y: Y::Indexed(y_train),
+            x: Arc::new(to_biased(x_train)),
+            y: Arc::new(to_matrix_y(y_train)),
         },
         test: Data {
-            x: X::NotBiased(x_test),
-            y: Y::Indexed(y_test),
+            x: Arc::new(to_biased(x_test)),
+            y: Arc::new(to_matrix_y(y_test)),
         },
     };
 }
