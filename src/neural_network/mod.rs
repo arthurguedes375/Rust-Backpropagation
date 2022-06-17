@@ -1,11 +1,12 @@
 pub mod types;
+pub mod weights;
+use weights::Weights;
 
 use std::sync::{mpsc::{channel, Receiver}, Arc};
 use std::io::{self, Write};
-use std::{fs, time};
-use crate::task::{init_task, end_task};
+use crate::task::{init_task, end_task, is_debugging};
 use na::{DMatrix};
-use types::{Weights, Unit};
+use types::{Unit};
 use crate::data::{X, Y};
 
 
@@ -177,8 +178,17 @@ impl NeuralNetwork {
         };
     }
 
-    pub fn train(&mut self, x: &X, y: &Y, alpha: f32, lambda: f32, iters: usize, batch_size: usize, debug: bool, rx: Receiver<()>) {
-        println!("Training... ");
+    pub fn train(
+        &mut self,
+        x: &X,
+        y: &Y,
+        alpha: f32,
+        lambda: f32,
+        iters: usize,
+        batch_size: usize,
+        rx: Receiver<()>
+    ) {
+        if is_debugging() { println!("Training... "); }
         let mut batches: Vec<[Arc<DMatrix<f32>>; 2]> = vec![];
 
         for i in 0..iters {
@@ -201,42 +211,11 @@ impl NeuralNetwork {
             for (i, grad) in evaluation.gradient.iter().enumerate() {
                 self.theta[i] -= grad * alpha;
             }
-            if debug {
+            if is_debugging() {
                 print!("\rIteration: {i}, Mini batch: {v1}..{v2}, Cost: {}\r", evaluation.cost);
                 io::stdout().flush().unwrap();
             }
         }
-    }
-
-    pub fn export(&self, path: &str, export_len: Option<usize>) {
-        init_task("Exporting");
-        let export_len = export_len.unwrap_or(9);
-        let start = time::SystemTime::now();
-        let mili = start
-            .duration_since(time::UNIX_EPOCH)
-            .unwrap().as_millis().to_string();
-
-        let filepath = format!("{path}/{}.txt", &mili[mili.len() - export_len..]);
-        let mut dump_file =  fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .read(true)
-        .open(filepath)
-        .unwrap();
-
-        for (i, layer) in (&self.theta).iter().enumerate() {
-            for row in layer.row_iter() {
-                for col in row.column_iter() {
-                    write!(dump_file, "{},", col[0]).unwrap();
-                }
-                write!(dump_file, "\n").unwrap();
-            }
-            if i < self.theta.len() - 1 {
-                write!(dump_file, "=").unwrap();
-            }
-        }
-
-        end_task()
     }
 }
 

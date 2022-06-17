@@ -7,4 +7,3 @@ pub type Layer = DVector<Unit>;
 pub type LayerWeight = DMatrix<Weight>; //actual layer X layer_before + bias
 
 pub type Layers = Vec<Layer>;
-pub type Weights = Vec<LayerWeight>;
