@@ -3,7 +3,6 @@ pub mod types;
 use std::sync::{mpsc::{channel, Receiver}, Arc};
 use std::io::{self, Write};
 use std::{fs, time};
-use rand::Rng;
 use crate::task::{init_task, end_task};
 use na::{DMatrix};
 use types::{Weights, Unit};
@@ -211,14 +210,13 @@ impl NeuralNetwork {
 
     pub fn export(&self, path: &str, export_len: Option<usize>) {
         init_task("Exporting");
-        let export_len = export_len.unwrap_or(5);
+        let export_len = export_len.unwrap_or(9);
         let start = time::SystemTime::now();
         let mili = start
             .duration_since(time::UNIX_EPOCH)
             .unwrap().as_millis().to_string();
-        let mut rand = rand::thread_rng();
 
-        let filepath = format!("{path}/{}{}.txt", &mili[mili.len() - export_len..], rand.gen_range(0..100));
+        let filepath = format!("{path}/{}.txt", &mili[mili.len() - export_len..]);
         let mut dump_file =  fs::OpenOptions::new()
         .create(true)
         .write(true)
