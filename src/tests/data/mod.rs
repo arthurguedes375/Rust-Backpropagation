@@ -1,7 +1,7 @@
 use crate::data::load::load_csv as lcsv;
 #[test]
 fn load_csv() {
-    let data = lcsv("src/tests/data/load_csv_test.csv", Some(0.8));
+    let data = lcsv("src/tests/data/load_csv_test.csv", Some(0.8), false);
 
     assert_eq!(data.train.x.nrows(), 8);
     assert_eq!(data.test.x.nrows(), 2);

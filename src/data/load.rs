@@ -13,17 +13,18 @@ pub struct Dataset {
     pub test: Data,
 }
 
-pub fn load_csv(path: &str, train_percentage: Option<f32>) -> Dataset {
-    init_task("Loading csv");
+pub fn load_csv(path: &str, train_percentage: Option<f32>, debug: bool) -> Dataset {
+    if debug { init_task("Loading csv"); }
 
     let mut content = Reader::from_path(path).unwrap(); 
     let value = content.records().map(|x| x.unwrap()).collect::<Vec<StringRecord>>();
     let m = value.len();
     let a1_len = value[0].len();
 
-    end_task();
-    init_task("Processing csv");
-
+    if debug {
+        end_task();
+        init_task("Processing csv");
+    }
     let mut x = na::DMatrix::<f32>::zeros(
         m,
         a1_len,
@@ -53,7 +54,7 @@ pub fn load_csv(path: &str, train_percentage: Option<f32>) -> Dataset {
     let x_test = x.slice_range(divisor.., ..).clone_owned();
     let y_test = y.slice_range(divisor.., ..).clone_owned();
 
-    end_task();
+    if debug { end_task(); }
     return Dataset {
         train: Data {
             x: Arc::new(to_biased(x_train)),
