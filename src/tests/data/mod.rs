@@ -1,4 +1,6 @@
-use crate::data::{load::load_csv as lcsv, Weights};
+use na::{dmatrix, dvector};
+
+use crate::data::{load::load_csv as lcsv, Weights, to_biased as tbiased, to_matrix_y};
 
 #[test]
 fn load_csv() {
@@ -60,4 +62,22 @@ fn load_theta() {
     assert_eq!(theta.len() - 1, hidden_layers);
     assert_eq!(theta[theta.len() - 1].nrows(), ycols);
     assert_eq!(theta[theta.len() - 1].ncols(), theta[theta.len() - 2].nrows() + 1);
+}
+
+#[test]
+fn to_biased() {
+    let data = tbiased(dmatrix![2.0, 3.0, 4.0; 5.0, 6.0, 7.0]);
+
+    assert_eq!(data.column(0)[0], 1.0);
+    assert_eq!(data.column(0)[1], 1.0);
+}
+
+#[test]
+fn to_y_matrix() {
+    let m = to_matrix_y(dvector![1.0, 2.0, 3.0, 0.0]);
+
+    assert_eq!(m.row(0).column(1)[0], 1.0);
+    assert_eq!(m.row(1).column(2)[0], 1.0);
+    assert_eq!(m.row(2).column(3)[0], 1.0);
+    assert_eq!(m.row(3).column(0)[0], 1.0);
 }
