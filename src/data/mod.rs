@@ -28,7 +28,8 @@ pub fn to_biased(x: DMatrix<Unit>) -> DMatrix<Unit> {
 pub struct Weights {}
 
 impl Weights {
-    pub fn init(x: &X, hidden_layers: u16, hidden_layers_len: u16, y: &Y, epsilon: f32) -> Ws { 
+    pub fn init(x: &X, hidden_layers: u16, hidden_layers_len: u16, y: &Y, epsilon: Option<f32>, debug: bool) -> Ws { 
+        let epsilon = epsilon.unwrap_or(0.1);
         println!(
 "========
 Training examples: {}
@@ -38,7 +39,7 @@ Hidden layers len: {hidden_layers_len}
 ========
 ", x.nrows(), y.ncols()
 );
-        init_task("Initializing theta");
+        if debug { init_task("Initializing theta"); }
         let mut rand = rand::thread_rng();
         let theta_len = hidden_layers + 1;
 
@@ -70,7 +71,7 @@ Hidden layers len: {hidden_layers_len}
             weights.push(w);
         }
 
-        end_task();
+        if debug { end_task(); }
         return weights;
     }
 
