@@ -40,3 +40,24 @@ fn init_theta() {
     assert_eq!(theta[theta.len() - 1].nrows(), data.train.y.ncols());
     assert_eq!(theta[theta.len() - 1].ncols(), theta[theta.len() - 2].nrows() + 1);
 }
+
+#[test]
+fn load_theta() {
+    let theta = Weights::load("src/tests/data/theta_test.txt", false);
+
+    /*
+     These values come from the theta_test exported theta,
+     don't change this unless you changed the file(re-export another set of theta)
+    */
+    let hidden_layers = 2;
+    let hidden_layers_len = 16;
+    let xcols = 786;
+    let ycols = 10;
+    // ===========================================
+
+    assert_eq!(theta[0].nrows(), hidden_layers_len);
+    assert_eq!(theta[0].ncols(), xcols);
+    assert_eq!(theta.len() - 1, hidden_layers);
+    assert_eq!(theta[theta.len() - 1].nrows(), ycols);
+    assert_eq!(theta[theta.len() - 1].ncols(), theta[theta.len() - 2].nrows() + 1);
+}

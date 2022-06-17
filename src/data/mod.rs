@@ -77,12 +77,13 @@ impl Weights {
         return weights;
     }
 
-    pub fn load(path: &str) -> Ws {
-        init_task("Loading Weights");
+    pub fn load(path: &str, debug: bool) -> Ws {
+        if debug { init_task("Loading Weights"); }
         let file = std::fs::read_to_string(path).unwrap();
-        end_task();
-
-        init_task("Processing Weights");
+        if debug {
+            end_task();
+            init_task("Processing Weights");
+        }
         let mut weights = vec![];
 
         let layers = file.split('=').collect::<Vec<&str>>();
@@ -109,7 +110,7 @@ impl Weights {
             weights.push(nw);
         }
 
-        end_task();
+        if debug { end_task(); }
         return weights;
     }
 }
