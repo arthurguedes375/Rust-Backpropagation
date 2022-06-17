@@ -15,8 +15,6 @@ fn load_csv() {
     assert_eq!(data.train.y.ncols(), 9);
     assert_eq!(data.test.y.ncols(), 10);
     
-    
-    println!("{}", data.train.y);
     assert_eq!(data.train.y.row(7).column(8)[0], 1.0);
     assert_eq!(data.test.y.row(0).column(9)[0], 1.0);
 }
